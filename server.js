@@ -6,34 +6,37 @@ const FileStore = require('session-file-store')(session);
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const cors = require('cors');
+const mongoose = require('mongoose');
+require('dotenv').config();
 
-const users = [
-    {id: '2f24vvg', username: 'test', password: 'password'}
-  ]
-
-passport.use(new LocalStrategy({usernameField: 'username'}, (username, password, done) => {
-    console.log('passport use');
-    console.log(username + password);
-    const user = users[0];
-    if (username == user.username && password == user.password) {
+passport.use(new LocalStrategy(
+    function(username, password, done) {
+      User.findOne({ username: username }, function(err, user) {
+        if (err) {
+          console.log('err'); 
+          return done(err); }
+        if (!user) {
+          return done(null, false, { message: 'Incorrect username.' });
+        }
+        if (user.password != password) {
+          return done(null, false, { message: 'Incorrect password.' });
+        }
         return done(null, user);
+      });
     }
-    else {
-        return done(null, false, {message: "incorrect password"})
-    }
-}));
+  ));
 
 passport.serializeUser((user, done) => {
     console.log('Inside serializeUser callback. User id is save to the session file store here')
-    console.log(user);
+    console.log(user.id);
     done(null, user.id);
   });
 
-passport.deserializeUser((id, done) => {
+passport.deserializeUser((username, done) => {
 console.log('Inside deserializeUser callback')
-console.log(`The user id passport saved in the session file store is: ${id}`)
-const user = users[0].id === id ? users[0] : false; 
-done(null, user);
+User.findById(username, function(err, user) {
+    done(err, user);
+  });
 });
 
 const app = express();
@@ -41,7 +44,11 @@ const app = express();
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 
-app.use(cors());
+app.use(cors({
+    origin:['http://localhost:3000'],
+    methods:['GET','POST'],
+    credentials: true // enable set cookie
+}));
 
 app.use(session({
     genid: (req) => {
@@ -54,10 +61,23 @@ app.use(session({
 }));
 
 app.use(passport.initialize());
-app.use(passport.session())
+app.use(passport.session());
+
+mongoose.connect(process.env.DB_URI, {useNewUrlParser: true, useUnifiedTopology: true}, (err) => {
+    if (err) throw err;
+});
+
+const Schema = mongoose.Schema;
+const userSchema = new Schema({
+        username: {type: String, required: true},
+        password: String,
+        documents: [String]
+});
+
+const User = mongoose.model("User", userSchema);
 
 app.get('/', (req, res) => {
-    res.json({"name": "s"});
+    res.redirect('http://localhost:3000') 
 });
 
 app.get('/login', (req, res) => {
@@ -66,26 +86,22 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/login', (req, res, next) => {
-    // console.log('yes');
-    // console.log(JSON.stringify(req.user));
     passport.authenticate('local', (err, user, info) => {
-        // req.login(user, (err) => {
-        //     if (err) { return next(err); }
-        //     return res.json({
-        //         "login": "yes!"
-        //     })
-        // })
-        // // res.json(req.body);
-        if (err) { return next(err); }
-        if (!user) { return res.redirect('/login'); }
-        req.logIn(user, function(err) {
-             if (err) { return next(err); }
-             return res.json({
-                        "login": "yes!"
-                    })
-         });
+        req.login(user, (err) => {
+            if (err) { return next(err); }
+            return res.json({
+                "username": user.username,
+                "documents": user.documents,
+                "password": user.password,
+            })
+        })
     })(req, res, next);
 });
+
+app.get('/logout', (req, res) => {
+  req.logout();
+  res.redirect('/')
+})
 
 app.get('/authrequired', (req, res) => {
     console.log('Inside GET /authrequired callback')
@@ -99,5 +115,5 @@ app.get('/authrequired', (req, res) => {
   });
 
 app.listen(5000, () => {
-    console.log('listening on 3000');
+    console.log('listening on 5000');
 });
