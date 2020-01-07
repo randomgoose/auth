@@ -27,13 +27,10 @@ passport.use(new LocalStrategy(
   ));
 
 passport.serializeUser((user, done) => {
-    console.log('Inside serializeUser callback. User id is save to the session file store here')
-    console.log(user.id);
     done(null, user.id);
   });
 
 passport.deserializeUser((username, done) => {
-console.log('Inside deserializeUser callback')
 User.findById(username, function(err, user) {
     done(err, user);
   });
@@ -71,13 +68,17 @@ const Schema = mongoose.Schema;
 const userSchema = new Schema({
         username: {type: String, required: true},
         password: String,
-        documents: [String]
+        documents: [String],
+        isLoggedIn: Boolean
 });
 
 const User = mongoose.model("User", userSchema);
 
 app.get('/', (req, res) => {
-    res.redirect('http://localhost:3000') 
+    // res.redirect('/') 
+    res.json({
+      name: 'hi'
+    })
 });
 
 app.get('/login', (req, res) => {
@@ -89,31 +90,49 @@ app.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
         req.login(user, (err) => {
             if (err) { return next(err); }
+            User.findByIdAndUpdate(user.id, { isLoggedIn: true}, (err, user) => {
+              if (err) return err;
+            })
             return res.json({
-                "username": user.username,
-                "documents": user.documents,
-                "password": user.password,
+                "id": user.id,
+                "documents": user.documents
             })
         })
     })(req, res, next);
 });
 
 app.get('/logout', (req, res) => {
+  User.findByIdAndUpdate(req.user.id, { isLoggedIn: false }, (err, user) => {
+    if (err) return err;
+  });
   req.logout();
   res.redirect('/')
 })
 
 app.get('/authrequired', (req, res) => {
-    console.log('Inside GET /authrequired callback')
-    console.log(req.sessionID);
-    console.log(`User authenticated? ${req.isAuthenticated()}`)
+    // console.log('Inside GET /authrequired callback')
+    // console.log(req.sessionID);
+    // console.log(`User authenticated? ${req.isAuthenticated()}`)
     if(req.isAuthenticated()) {
-      res.send('you hit the authentication endpoint\n')
+      res.send('you hit the authentication endpoint\n' + String(req.user))
     } else {
       res.redirect('/')
     }
   });
 
+
+app.post('/authrequired', (req, res) => {
+  User.findById(req.body.id, (err, user) => {
+    if (user.isLoggedIn === true) {
+      res.json({
+        isLoggedIn: true,
+        documents: user.documents
+      })
+    }
+  })
+});
+
 app.listen(5000, () => {
     console.log('listening on 5000');
 });
+ 
