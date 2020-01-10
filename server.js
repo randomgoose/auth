@@ -7,7 +7,10 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const cors = require('cors');
 const mongoose = require('mongoose');
+const model = require('./model');
 require('dotenv').config();
+
+const User = model.User;
 
 passport.use(new LocalStrategy(
     function(username, password, done) {
@@ -64,15 +67,15 @@ mongoose.connect(process.env.DB_URI, {useNewUrlParser: true, useUnifiedTopology:
     if (err) throw err;
 });
 
-const Schema = mongoose.Schema;
-const userSchema = new Schema({
-        username: {type: String, required: true},
-        password: String,
-        documents: [String],
-        isLoggedIn: Boolean
-});
+// const Schema = mongoose.Schema;
+// const userSchema = new Schema({
+//         username: {type: String, required: true},
+//         password: String,
+//         documents: [String],
+//         isLoggedIn: Boolean
+// });
 
-const User = mongoose.model("User", userSchema);
+// const User = mongoose.model("User", userSchema);
 
 app.get('/', (req, res) => {
     // res.redirect('/') 
@@ -88,6 +91,7 @@ app.get('/login', (req, res) => {
 
 app.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
+        console.log("SADA", info)
         req.login(user, (err) => {
             if (err) { return next(err); }
             User.findByIdAndUpdate(user.id, { isLoggedIn: true}, (err, user) => {
@@ -98,7 +102,7 @@ app.post('/login', (req, res, next) => {
                 "documents": user.documents
             })
         })
-    })(req, res, next);
+    }, { failureFlash: 'Invalid username or password.' })(req, res, next);
 });
 
 app.get('/logout', (req, res) => {
