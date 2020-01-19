@@ -114,6 +114,7 @@ app.get('/logout', (req, res) => {
 })
 
 app.get('/authrequired', (req, res) => {
+    console.log(req.cookies);
     // console.log('Inside GET /authrequired callback')
     // console.log(req.sessionID);
     // console.log(`User authenticated? ${req.isAuthenticated()}`)
@@ -123,6 +124,18 @@ app.get('/authrequired', (req, res) => {
       res.redirect('/')
     }
   });
+
+// app.post('/save', (req, res) => {
+//   if(req.isAuthenticated()){
+//     // res.
+//   }
+// })
+
+app.get('/getDocuments', (req, res) => {
+  if(req.isAuthenticated()){
+    res.send(req.user);
+  }
+});
 
 
 app.post('/authrequired', (req, res) => {

@@ -5,7 +5,12 @@ const Schema = mongoose.Schema;
 const userSchema = new Schema({
     username: {type: String, required: true},
     password: String,
-    documents: [String],
+    documents: [{
+        author: {type: String, required: true},
+        timeCreated: Date,
+        content: {type: String, required: true}
+
+    }],
     isLoggedIn: Boolean
 });
 
@@ -17,4 +22,4 @@ const User = mongoose.model("User", userSchema);
 
 module.exports = {
     User: User
-} 
+}
