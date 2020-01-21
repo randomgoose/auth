@@ -4,62 +4,60 @@ const bodyParser = require('body-parser');
 const uuid = require('uuid/v4');
 const FileStore = require('session-file-store')(session);
 const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
 const cors = require('cors');
-const mongoose = require('mongoose');
-<<<<<<< HEAD
-const model = require('./model');
-=======
+const LocalStrategy = require('passport-local').Strategy;
 const cookieParser = require('cookie-parser');
->>>>>>> a2f0286
-require('dotenv').config();
+const bcrypt = require('bcrypt');
+const model = require('./ model');
 
+// User model
 const User = model.User;
 
-passport.use(new LocalStrategy(
-    function(username, password, done) {
-      User.findOne({ username: username }, function(err, user) {
-        if (err) {
-          console.log('err'); 
-          return done(err); }
+// Configure Passport.js middleware
+passport.use(new LocalStrategy((username, password, done) => {
+    User.findOne({
+        username
+    }).then((user) => {
+        // User not registered
         if (!user) {
-          return done(null, false, { message: 'Incorrect username.' });
+            return done(null, false, { message: 'User not registered' });
         }
+
+        // Incorrect password
         if (user.password != password) {
-          return done(null, false, { message: 'Incorrect password.' });
+            return done(null, false, { message: 'Incorrect password' });
         }
+
+        // Authentication successful
         return done(null, user);
-      });
-    }
-  ));
+    }).catch((err) => {
+        return done(err);
+    });
+}));
 
 passport.serializeUser((user, done) => {
     done(null, user.id);
-  });
-
-passport.deserializeUser((username, done) => {
-User.findById(username, function(err, user) {
-    done(err, user);
-  });
+});
+    
+passport.deserializeUser((id, done) => {
+    User.findById(id, (err, user) => {
+        done(err, user);
+    });
 });
 
 const app = express();
 
-app.use(bodyParser.urlencoded({extended: false}));
+// Configure body parser
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-app.use(cors({
-    origin:['http://localhost:3000'],
-    methods:['GET','POST'],
-    credentials: true // enable set cookie
-}));
-
+// Configure Express Session middleware
 app.use(session({
     genid: (req) => {
         return uuid();
     },
     store: new FileStore(),
-    secret: 'keyboard cat',
+    secret: 'random goose',
     resave: false,
     saveUninitialized: true
 }));
@@ -67,101 +65,121 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Use Cookie Parser
 app.use(cookieParser());
 
-mongoose.connect(process.env.DB_URI, {useNewUrlParser: true, useUnifiedTopology: true}, (err) => {
-    if (err) throw err;
+// Use cors
+app.use(cors({
+    origin:['http://localhost:3000'],
+    methods:['GET','POST', 'OPTIONS'],
+    credentials: true // enable set cookie
+}));
+
+app.get('/signup', (req, res) => {
+    res.sendFile(__dirname + "/signup.html");
 });
 
-// const Schema = mongoose.Schema;
-// const userSchema = new Schema({
-//         username: {type: String, required: true},
-//         password: String,
-//         documents: [String],
-//         isLoggedIn: Boolean
-// });
-
-// const User = mongoose.model("User", userSchema);
-
-app.get('/', (req, res) => {
-    // res.redirect('/') 
-    res.json({
-      name: 'hi'
+app.post('/signup', (req, res) => {
+    // Validate input
+    User.findOne({
+        username: req.body.username
     })
+    .then((user) => {
+        // User exists
+        if (user) {
+
+        }
+
+        else {
+            const newUser = new User({
+                username: req.body.username,
+                password: req.body.password,
+                documents: [],
+                isLoggedIn: false
+            });
+
+            newUser.save((err) => {
+                return err;
+            })
+        }
+    })
+    .catch((err) => {
+        res.send(err);
+    });
+
 });
 
 app.get('/login', (req, res) => {
-    res.sendFile(__dirname + '/login.html');
-    console.log(req.sessionID);
+    res.json({
+        'info': 'none'
+    });
 });
+
+
+app.post('/test', (req, res) => {
+    res.json({info: 'great'});
+})
 
 app.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
-        console.log("SADA", info)
         req.login(user, (err) => {
-            if (err) { return next(err); }
-            User.findByIdAndUpdate(user.id, { isLoggedIn: true}, (err, user) => {
-              if (err) return err;
-            })
-            return res.json({
-                "id": user.id,
-                "documents": user.documents
-            })
+            if (err) {
+                console.log(info);
+                return next(err);
+            }
+            console.log(req.user);
+            return res.send(user);
+        });
+    })(req, res, next);
+});
+
+app.post('/auth', (req, res) => {
+    if (req.isAuthenticated()) {
+        User.findById(req.user)
+        .then((user) => {
+            res.json(
+                {
+                    isLoggedIn: true,
+                    id: user.id,
+                    documents: user.documents
+                }
+            );
         })
-    }, { failureFlash: 'Invalid username or password.' })(req, res, next);
+    }
+    else {
+        res.json(
+            {"isLoggedIn": false}
+        );
+    }
+});
+
+app.get('/auth', (req, res) => {
+    if (req.isAuthenticated()) {
+        User.findById(req.user)
+        .then((user) => {
+            res.json(
+                {
+                    isLoggedIn: true,
+                    id: user.id,
+                    documents: user.documents
+                }
+            );
+        })
+    }
+    else {
+        res.json(
+            {
+                isLoggedIn: false
+            }
+        );
+    }
 });
 
 app.get('/logout', (req, res) => {
-  User.findByIdAndUpdate(req.user.id, { isLoggedIn: false }, (err, user) => {
-    if (err) return err;
-  });
-  req.logout();
-  res.redirect('/')
+    req.logout();
+    res.send("Logged out!");
 })
 
-app.get('/authrequired', (req, res) => {
-<<<<<<< HEAD
-    console.log(req.cookies);
-=======
-    
->>>>>>> a2f0286
-    // console.log('Inside GET /authrequired callback')
-    // console.log(req.sessionID);
-    // console.log(`User authenticated? ${req.isAuthenticated()}`)
-    if(req.isAuthenticated()) {
-      res.send('you hit the authentication endpoint\n' + String(req.user))
-    } else {
-      res.redirect('/')
-    }
-  });
-
-// app.post('/save', (req, res) => {
-//   if(req.isAuthenticated()){
-//     // res.
-//   }
-// })
-
-app.get('/getDocuments', (req, res) => {
-  if(req.isAuthenticated()){
-    res.send(req.user);
-  }
+app.listen(8080, () => {
+    console.log('Listening on 8080...')
 });
-
-
-app.post('/authrequired', (req, res) => {
-  console.log("sessionID", req.sessionID);
-  res.send(req.sessionID);
-  // User.findById(req.body.id, (err, user) => {
-  //   if (user.isLoggedIn === true) {
-  //     res.json({
-  //       isLoggedIn: true,
-  //       documents: user.documents
-  //     })
-  //   }
-  // })
-});
-
-app.listen(5000, () => {
-    console.log('listening on 5000');
-});
- 
