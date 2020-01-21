@@ -7,6 +7,7 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const cors = require('cors');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 passport.use(new LocalStrategy(
@@ -60,6 +61,8 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.use(cookieParser());
+
 mongoose.connect(process.env.DB_URI, {useNewUrlParser: true, useUnifiedTopology: true}, (err) => {
     if (err) throw err;
 });
@@ -110,6 +113,7 @@ app.get('/logout', (req, res) => {
 })
 
 app.get('/authrequired', (req, res) => {
+    
     // console.log('Inside GET /authrequired callback')
     // console.log(req.sessionID);
     // console.log(`User authenticated? ${req.isAuthenticated()}`)
@@ -122,14 +126,16 @@ app.get('/authrequired', (req, res) => {
 
 
 app.post('/authrequired', (req, res) => {
-  User.findById(req.body.id, (err, user) => {
-    if (user.isLoggedIn === true) {
-      res.json({
-        isLoggedIn: true,
-        documents: user.documents
-      })
-    }
-  })
+  console.log("sessionID", req.sessionID);
+  res.send(req.sessionID);
+  // User.findById(req.body.id, (err, user) => {
+  //   if (user.isLoggedIn === true) {
+  //     res.json({
+  //       isLoggedIn: true,
+  //       documents: user.documents
+  //     })
+  //   }
+  // })
 });
 
 app.listen(5000, () => {
