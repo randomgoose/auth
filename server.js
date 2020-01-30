@@ -170,7 +170,7 @@ app.get('/auth', (req, res) => {
     else {
         res.json(
             {
-                isLoggedIn: false
+                "isLoggedIn": false
             }
         );
     }
@@ -200,18 +200,27 @@ app.get('/add', (req, res) => {
                     author: user.username,
                     timeCreated: new Date()
                 });
-
                 user.documents.push(newDoc);
                 user.save((err) => err);
-                console.log(user)
-            })
-            .then(() => {
-                res.json({"info": "yes"})
+                res.send(user);
             })
             .catch(err => console.error(err));
     } else {
         console.log('no')
         res.json({"info": "no"})
+    }
+})
+
+// Get documents
+app.get('/get', (req, res) => {
+    if(req.isAuthenticated()) {
+        User.findById(req.user)
+            .then((user) => {
+                res.json({documents: user.documents})
+            })
+            .catch((err) => console.log(err));
+    } else {
+        res.json({"error": "No user logged in."})
     }
 })
 

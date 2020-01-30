@@ -9,6 +9,7 @@ mongoose.connect(process.env.DB_URI, {
 const Schema = mongoose.Schema;
 
 const documentSchema = new Schema({
+    // _id: String,
     content: {type: String, required: true},
     author: String,
     timeCreated: Date

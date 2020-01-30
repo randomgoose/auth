@@ -15,11 +15,12 @@ console.log(Document);
 //     password: "ss",
 //     documents: [], 
 //     isLoggedIn: false;
-// })
+// }) 
 
 
 const newDoc = new Document({
-    content: "Hi, there",
+    _id: "uniqueid",
+    content: "unique",
     author: "randomgoose",
     timeCreated: new Date()
 })
