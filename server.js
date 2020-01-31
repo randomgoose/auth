@@ -46,7 +46,11 @@ passport.deserializeUser((id, done) => {
     });
 });
 
-const app = express();
+const app = express().use(cors({origin: ['http://t-9.tools:3000'],
+    methods: ['GET', 'POST', 'OPTIONS'],
+    credentials: true 
+}));
+    // enable set cookie
 
 // Configure body parser
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -70,11 +74,11 @@ app.use(passport.session());
 app.use(cookieParser());
 
 // Use cors
-app.use(cors({
-    origin: ['http://localhost:3000'],
-    methods: ['GET', 'POST', 'OPTIONS'],
-    credentials: true // enable set cookie
-}));
+// app.use(cors({
+//     origin: ['http://t-9.tools:3000'],
+//     methods: ['GET', 'POST', 'OPTIONS'],
+//     credentials: true // enable set cookie
+// }));
 
 app.get('/signup', (req, res) => {
     res.sendFile(__dirname + "/signup.html");
