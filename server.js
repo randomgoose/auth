@@ -46,7 +46,7 @@ passport.deserializeUser((id, done) => {
     });
 });
 
-const app = express().use(cors({origin: ['http://t-9.tools:3000'],
+const app = express().use(cors({origin: ['http://localhost:3000'],
     methods: ['GET', 'POST', 'OPTIONS'],
     credentials: true 
 }));
