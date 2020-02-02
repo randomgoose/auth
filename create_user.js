@@ -2,7 +2,7 @@ const model = require('./model');
 const mongoose = require('mongoose');
 
 
-mongoose.connect("mongodb+srv://randomgoose:Buccleuch123@cluster0-kxkb7.mongodb.net/test?retryWrites=true&w=majority", {useNewUrlParser: true, useUnifiedTopology: true}, (err) => {
+mongoose.connect("mongodb+srv://randomgoose:goose123@localhost/admin", {useNewUrlParser: true, useUnifiedTopology: true}, (err) => {
   // if (err) throw err;
   console.log('DB Connected.');
   if (err) throw err;
@@ -10,9 +10,7 @@ mongoose.connect("mongodb+srv://randomgoose:Buccleuch123@cluster0-kxkb7.mongodb.
 
 
 const Message = mongoose.model('Message', {
-  name: String,
-  message: String
-});
+  na
 
 // function timeout(ms) {
 //   return new Promise((resolve, reject) => {
