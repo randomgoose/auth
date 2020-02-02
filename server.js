@@ -187,9 +187,7 @@ app.post('/save', (req, res) => {
             const document = user.documents.id(req.body.documentID);
             document.content = req.body.newContent;
             user.save((err) => console.error(err));
-            res.json({
-                "info": "Document saved!"
-            })
+            res.send(user);
         })
         .catch((err) => console.error(err));
 });
@@ -214,6 +212,24 @@ app.get('/add', (req, res) => {
         res.json({"info": "no"})
     }
 })
+
+
+// Delet Document end point
+app.post('/delete', (req, res) => {
+    if(req.isAuthenticated()){
+        User.findById(req.user)
+            .then((user) => {
+                user.documents.pull(req.body.documentID);
+                user.save((err) => console.error(err));
+                res.send(user);
+            })
+            .catch(err => console.error(err));
+    } else {
+        console.log('no')
+        res.json({"info": "no"})
+    }
+})
+
 
 // Get documents
 app.get('/get', (req, res) => {
