@@ -92,7 +92,9 @@ app.post('/signup', (req, res) => {
         .then((user) => {
             // User exists
             if (user) {
-
+                res.json({
+                    error: "Username exists"
+                })
             }
 
             else {
@@ -104,7 +106,7 @@ app.post('/signup', (req, res) => {
                 });
 
                 newUser.save((err) => {
-                    return err;
+                    res.send(newUser);
                 })
             }
         })
@@ -198,7 +200,7 @@ app.get('/add', (req, res) => {
         User.findById(req.user)
             .then((user) => {
                 let newDoc = new Document({
-                    content: "hi" + user.username,
+                    content: "# ",
                     author: user.username,
                     timeCreated: new Date()
                 });
